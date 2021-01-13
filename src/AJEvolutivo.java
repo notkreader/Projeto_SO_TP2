@@ -16,28 +16,37 @@ public class AJEvolutivo {
         AJEvolutivo aje;
         int[][] paths;
         int[][] shortestPath;
+        long duration;
 
-        public AJEvolutivoThread(AJEvolutivo aje) {
+        public AJEvolutivoThread(AJEvolutivo aje, long duration) {
             this.aje = aje;
             paths = new int[aje.size][aje.size];
-            shortestPath = new int[2][aje.size];
+            this.duration = duration;
         }
 
         @Override
         public void run() {
-            System.out.println(getName());
 
             for (int i = 0; i < aje.size; i++) {
                 paths[i] = aje.generatePath();
             }
 
-            printPaths();
+            while(true) {
+                System.out.println(getName());
 
-            System.out.println("\n");
+                shortestPaths();
 
-            shortestPaths();
+                int[] offSpring1 = new int[aje.size];
+                int[] offSpring2 = new int[aje.size];
+                Random random = new Random();
 
-            printShortestPaths();
+                PMXCrossover.pmxCrossover(shortestPath[0], shortestPath[1], offSpring1, offSpring2, aje.size, random);
+
+                randomSwap(offSpring1);
+                randomSwap(offSpring2);
+
+                changeWorstPaths(offSpring1, offSpring2);
+            }
         }
 
         public int distance(int path[]) {
@@ -59,7 +68,21 @@ public class AJEvolutivo {
             return distance;
         }
 
+        public void randomSwap(int[] path) {
+            Random random = new Random();
+            boolean equals = random.nextInt(100) == 0;
+
+            if(equals) {
+                int a = random.nextInt(aje.size);
+                int b = random.nextInt(aje.size);
+                int tmp = path[a];
+                path[a] = path[b];
+                path[b] = tmp;
+            }
+        }
+
         public void shortestPaths() {
+            shortestPath = new int[2][aje.size];
             for(int i=0 ; i<aje.size ; i++) {
                 if(distance(shortestPath[1]) > distance(paths[i])) {
                     if(distance(shortestPath[0]) > distance(paths[i])) {
@@ -72,6 +95,29 @@ public class AJEvolutivo {
                     }
                 }
             }
+        }
+
+        public void changeWorstPaths(int[] path1, int[] path2) {
+            int[] worstPath0 = paths[0];
+            int[] worstPath1 = paths[0];
+            int pos0 = 0;
+            int pos1 = 0;
+
+            for(int i=0 ; i<aje.size ; i++) {
+                if(distance(paths[i]) > distance(worstPath0)) {
+                    worstPath1 = worstPath0;
+                    pos1 = pos0;
+                    worstPath0 = paths[i];
+                    pos0 = i;
+                }
+                if(distance(paths[i]) > distance(worstPath1) && distance(paths[i]) != distance(worstPath0)) {
+                    worstPath1 = paths[i];
+                    pos1 = i;
+                }
+            }
+
+            paths[pos0] = path1;
+            paths[pos1] = path2;
         }
 
         public void printPath(int[] path) {
@@ -101,30 +147,15 @@ public class AJEvolutivo {
                 }
                 System.out.println("> Distance: " + distance(shortestPath[i]));
             }
-            System.out.println();
+            System.out.println("\n");
         }
 
     }
-
-    public int[][] getMatrix() {
-        return this.matrix;
-    }
-
-
-
 
     public int generateNumber(int size) {
         Random random = new Random();
         return random.nextInt(size);
     }
-
-    /*public void swap() {
-        int a = generateNumber(path.length);
-        int b = generateNumber(path.length);
-        int tmp = path[a];
-        path[a] = path[b];
-        path[b] = tmp;
-    }*/
 
     public int[] generatePath() {
         int[] newPath = new int[size];
@@ -151,14 +182,14 @@ public class AJEvolutivo {
         File file = new File(dir);
 
         try {
-            Scanner scann = new Scanner(file);
-            size = scann.nextInt();
+            Scanner scan = new Scanner(file);
+            size = scan.nextInt();
             matrix = new int[size][size];
 
-            while (scann.hasNextInt()) {
+            while (scan.hasNextInt()) {
                 for (int i = 0; i < size; i++) {
                     for (int j = 0; j < size; j++) {
-                        matrix[i][j] = scann.nextInt();
+                        matrix[i][j] = scan.nextInt();
                     }
                 }
             }
@@ -181,17 +212,33 @@ public class AJEvolutivo {
     }
 
     public static void main(String[] args) throws InterruptedException {
+        String filename = "";
+        int nThreads = -1;
+        int nSeconds = -1;
 
-        AJEvolutivo aje = new AJEvolutivo("burma14.txt");
-        int nThreads = 10;
+        Scanner scan = new Scanner(System.in);
+        System.out.println("Insira um comando no formato: 'Ficheiro' 'NúmeroProcessos' 'DuraçãoSegundos'");
+        System.out.println("ex: ex6.txt 10 15\n-> ");
+        String command = scan.nextLine();
+        String[] commandSplit = command.split(" ");
+        try {
+            filename = commandSplit[0];
+            nThreads = Integer.parseInt(commandSplit[1]);
+            nSeconds = Integer.parseInt(commandSplit[2]);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        }
 
+        AJEvolutivo aje = new AJEvolutivo(filename);
         AJEvolutivoThread[] threads = new AJEvolutivoThread[nThreads];
 
         for (int i = 0; i < nThreads; i++) {
-            threads[i] = new AJEvolutivoThread(aje);
+            threads[i] = new AJEvolutivoThread(aje, nSeconds);
             threads[i].start();
-            threads[i].sleep(750);
+            //threads[i].sleep(750);
         }
+
+        //Thread.sleep(nSeconds);
     }
 
 }

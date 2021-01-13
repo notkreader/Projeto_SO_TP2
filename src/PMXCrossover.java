@@ -9,12 +9,14 @@ public class PMXCrossover {
         int i, n1, m1, n2, m2;
         int swap;
 
+        /*
         for (i = 0; i < n; i++)
             System.out.printf("%2d ", parent1[i]);
         System.out.println();
         for (i = 0; i < n; i++)
             System.out.printf("%2d ", parent2[i]);
         System.out.println();
+        */
 
         int cuttingPoint1 = rand.nextInt(n);
         int cuttingPoint2 = rand.nextInt(n);
@@ -31,7 +33,7 @@ public class PMXCrossover {
             cuttingPoint2 = swap;
         }
 
-        System.out.printf("cp1 = %d cp2 = %d\n", cuttingPoint1, cuttingPoint2);
+        //System.out.printf("cp1 = %d cp2 = %d\n", cuttingPoint1, cuttingPoint2);
 
         for (i = 0; i < n + 1; i++) {
             replacement1[i] = -1;
@@ -45,12 +47,14 @@ public class PMXCrossover {
             replacement2[parent1[i]] = parent2[i];
         }
 
+        /*
         for (i = 0; i < n + 1; i++)
             System.out.printf("%2d ", replacement1[i]);
         System.out.println();
         for (i = 0; i < n + 1; i++)
             System.out.printf("%2d ", replacement2[i]);
         System.out.println();
+        */
         // fill in remaining slots with replacements
         for (i = 0; i < n; i++) {
             if ((i < cuttingPoint1) || (i > cuttingPoint2)) {
