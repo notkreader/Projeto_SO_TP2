@@ -201,11 +201,11 @@ public class AJEvolutivoPlus extends Thread implements Comparator<Path> {
 
                 int popSize = paths.size();
                 ajeStorage.addAllToPopulation(this.paths);
-                Collections.sort(paths, this::compare);
                 paths.clear();
                 for(int i=0 ; i<popSize ; i++) {
                     paths.add(ajeStorage.allPopulation.get(i));
                 }
+                Collections.sort(paths, this::compare);
             }
             cicleTime = System.currentTimeMillis() - startTime;
         }
