@@ -37,9 +37,9 @@ public class Path {
         return distance;
     }
 
-    public void randomSwap() {
+    public boolean randomSwap(float probability) {
         Random random = new Random();
-        boolean equals = random.nextInt(100) == 0;
+        boolean equals = random.nextInt(100) <= (probability - 1);
 
         if(equals) {
             int a = random.nextInt(size);
@@ -47,12 +47,14 @@ public class Path {
             int tmp = path[a];
             path[a] = path[b];
             path[b] = tmp;
+            return true;
         }
+        return false;
     }
 
     @Override
     public String toString() {
-        String str = "Path: < ";
+        String str = "< ";
         for (int i = 0; i < size; i++) {
             str += path[i] + " ";
         }

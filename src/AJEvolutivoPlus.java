@@ -2,12 +2,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 
-public class AJEvolutivo extends Thread implements Comparator<Path> {
-    static AJEStorage ajeStorage;
+public class AJEvolutivoPlus extends Thread implements Comparator<Path> {
+    static AJEStoragePlus ajeStorage;
     List<Path> paths;
     long duration;
 
-    public AJEvolutivo(long duration) {
+    public AJEvolutivoPlus(long duration) {
         paths = new ArrayList<>();
         this.duration = duration;
     }
@@ -17,7 +17,7 @@ public class AJEvolutivo extends Thread implements Comparator<Path> {
         return p1.distance(ajeStorage.matrix) - p2.distance(ajeStorage.matrix);
     }
 
-    static class AJEStorage {
+    static class AJEStoragePlus {
         int size; // Size que está na 1ª coordenada de qualquer matriz, e esta variável é inicializada no método readMatrix()
         int[][] matrix;
         int populationSize;
@@ -25,13 +25,17 @@ public class AJEvolutivo extends Thread implements Comparator<Path> {
         Path bestPath;
         int ciclesToReachBestPath;
         long msToReachBestPath;
+        float totalTimePercent;
+        List<Path> allPopulation;
 
-        AJEStorage(String filename, int populationSize, float probability) {
+        AJEStoragePlus(String filename, int populationSize, float probability, float totalTimePercent) {
             readMatrix(filename);
             this.populationSize = populationSize;
             this.probability = probability;
             this.ciclesToReachBestPath = 0;
             this.msToReachBestPath = 0;
+            this.totalTimePercent = totalTimePercent;
+            allPopulation = new ArrayList<>();
         }
 
         int generateNumber(int size) {
@@ -103,10 +107,11 @@ public class AJEvolutivo extends Thread implements Comparator<Path> {
         int execTime = -1;
         int populationSize = -1;
         float probability = -1;
+        float totalTimePercent = -1;
 
         Scanner scan = new Scanner(System.in);
-        System.out.println("Insira um comando no formato: 'Ficheiro' 'NúmeroProcessos' 'DuraçãoSegundos' 'TamanhoPopulação' 'ProbabilidadeMutação'");
-        System.out.println("ex: ex6.txt 10 15 50 0.02\n-> ");
+        System.out.println("Insira um comando no formato: 'Ficheiro' 'NúmeroProcessos' 'DuraçãoSegundos' 'TamanhoPopulação' 'ProbabilidadeMutação' 'PercentagemTempoTotal'");
+        System.out.println("ex: ex6.txt 10 15 50 0.02 2\n-> ");
         String command = scan.nextLine();
         String[] commandSplit = command.split(" ");
         try {
@@ -115,12 +120,14 @@ public class AJEvolutivo extends Thread implements Comparator<Path> {
             execTime = Integer.parseInt(commandSplit[2]) * 1000;
             populationSize = Integer.parseInt(commandSplit[3]);
             probability = Float.parseFloat(commandSplit[4]) * 100;
+            totalTimePercent = Integer.parseInt(commandSplit[5]) / 100;
 
         } catch (NumberFormatException e) {
             e.printStackTrace();
         }
 
-        AJEStorage ajeStorage = new AJEStorage(filename, populationSize, probability);
+        /*
+        AJEvolutivo.AJEStorage ajeStorage = new AJEvolutivo.AJEStorage(filename, populationSize, probability, totalTimePercent);
         AJEvolutivo threads[] = new AJEvolutivo[nThreads];
         AJEvolutivo.ajeStorage = ajeStorage;
 
@@ -130,6 +137,7 @@ public class AJEvolutivo extends Thread implements Comparator<Path> {
             threads[i].start();
         }
         sleep(execTime + 500);
+        */
 
         System.out.println("Executed!\n");
         System.out.println("----- All Data -----");
@@ -175,6 +183,13 @@ public class AJEvolutivo extends Thread implements Comparator<Path> {
             paths.remove(paths.size() - 1); // Remove o pior, que é a última posição
             paths.remove(paths.size() - 1); // Remove o pior, que é a última posição, pois já foi removido um pior que este anteriormente
 
+            cicleTime = System.currentTimeMillis() - startTime;
+
+
+            if(cicleTime >= (duration*ajeStorage.totalTimePercent*count)) {
+
+
+            }
             cicleTime = System.currentTimeMillis() - startTime;
         }
 
