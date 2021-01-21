@@ -6,10 +6,12 @@ public class AJEvolutivoPlus extends Thread implements Comparator<Path> {
     static AJEStoragePlus ajeStorage;
     List<Path> paths;
     long duration;
+    int test;
 
-    public AJEvolutivoPlus(long duration) {
+    public AJEvolutivoPlus(long duration, int test) {
         paths = new ArrayList<>();
         this.duration = duration;
+        this.test = test;
     }
 
     @Override
@@ -27,15 +29,19 @@ public class AJEvolutivoPlus extends Thread implements Comparator<Path> {
         long msToReachBestPath;
         float totalTimePercent;
         List<Path> allPopulation;
+        int count;
+        int numberOfThreads;
 
-        AJEStoragePlus(String filename, int populationSize, float probability, float totalTimePercent) {
+        AJEStoragePlus(String filename, int numberOfThreads, int populationSize, float probability, float totalTimePercent) {
             readMatrix(filename);
+            this.numberOfThreads = numberOfThreads;
             this.populationSize = populationSize;
             this.probability = probability;
             this.ciclesToReachBestPath = 0;
             this.msToReachBestPath = 0;
             this.totalTimePercent = totalTimePercent;
             allPopulation = new ArrayList<>();
+            count = 0;
         }
 
         int generateNumber(int size) {
@@ -100,9 +106,28 @@ public class AJEvolutivoPlus extends Thread implements Comparator<Path> {
                 bestPath = pathFromThread;
         }
 
-        synchronized void addAllToPopulation(List<Path> threadPaths) {
+        synchronized boolean addAllToPopulation(List<Path> threadPaths, int test) {
             this.allPopulation.addAll(threadPaths);
             Collections.sort(allPopulation, this::compare);
+            count++;
+            if (count == numberOfThreads) {
+                count = 0;
+                notifyAll();
+                System.out.println("Notify: " + test);
+                return true;
+            }
+            return false;
+        }
+
+        synchronized List<Path> updateThreadPath(int popSize, int test, boolean result) throws InterruptedException {
+            if(!result)
+                wait();
+            System.out.println(test);
+            List<Path> temp = new ArrayList<>();
+            for (int i = 0; i < popSize; i++) {
+                temp.add(allPopulation.get(i));
+            }
+            return temp;
         }
 
         @Override
@@ -137,20 +162,21 @@ public class AJEvolutivoPlus extends Thread implements Comparator<Path> {
         }
 
 
-        AJEStoragePlus ajeStorage = new AJEStoragePlus(filename, populationSize, probability, totalTimePercent);
+        AJEStoragePlus ajeStorage = new AJEStoragePlus(filename, nThreads, populationSize, probability, totalTimePercent);
         AJEvolutivoPlus threads[] = new AJEvolutivoPlus[nThreads];
         AJEvolutivoPlus.ajeStorage = ajeStorage;
 
         System.out.println("Executing...");
         for (int i = 0; i < nThreads; i++) {
-            threads[i] = new AJEvolutivoPlus(execTime);
+            threads[i] = new AJEvolutivoPlus(execTime, i);
             threads[i].start();
         }
-        sleep(execTime + 500);
+        sleep(execTime + 1000);
 
 
         System.out.println("Executed!\n");
         System.out.println("-------------------- All Data Information --------------------");
+
         System.out.println("Filename: " + filename + " | Execution Time: " + execTime + "ms | Population Size: " + populationSize + " | Mutation Probability: " + probability + "% | Best Path: " + ajeStorage.bestPath.toString() + " | Distance: " + ajeStorage.bestPath.distance(ajeStorage.matrix) + " | Iterations To Best Path: " + ajeStorage.ciclesToReachBestPath + " | Time to Best Path: " + ajeStorage.msToReachBestPath + "ms");
     }
 
@@ -196,15 +222,20 @@ public class AJEvolutivoPlus extends Thread implements Comparator<Path> {
             paths.remove(paths.size() - 1); // Remove o pior, que é a última posição, pois já foi removido um pior que este anteriormente
 
             cicleTime = System.currentTimeMillis() - startTime;
-            if(timePercent <= cicleTime && (timePercent + eachTimePercent) <= duration) {
+            if (timePercent <= cicleTime && (timePercent + eachTimePercent) <= duration) {
                 timePercent += eachTimePercent;
 
                 int popSize = paths.size();
-                ajeStorage.addAllToPopulation(this.paths);
+                boolean result = ajeStorage.addAllToPopulation(this.paths, test);
                 paths.clear();
-                for(int i=0 ; i<popSize ; i++) {
-                    paths.add(ajeStorage.allPopulation.get(i));
+
+                try {
+                    paths.addAll(ajeStorage.updateThreadPath(popSize, test, result));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
+
+
                 Collections.sort(paths, this::compare);
             }
             cicleTime = System.currentTimeMillis() - startTime;
@@ -213,10 +244,11 @@ public class AJEvolutivoPlus extends Thread implements Comparator<Path> {
         ajeStorage.updateBestPath(paths.get(0));
 
         try {
-            Thread.sleep(250);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         interrupt();
+        //System.out.println(ajeStorage.allPopulation.size());
     }
 }
