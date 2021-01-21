@@ -3,13 +3,13 @@ import java.io.FileNotFoundException;
 import java.util.*;
 
 public class AJEvolutivo extends Thread implements Comparator<Path> {
+    int id;
     static AJEStorage ajeStorage;
     List<Path> paths;
-    long duration;
 
-    public AJEvolutivo(long duration) {
+    public AJEvolutivo(int id) {
+        this.id = id;
         paths = new ArrayList<>();
-        this.duration = duration;
     }
 
     @Override
@@ -20,16 +20,19 @@ public class AJEvolutivo extends Thread implements Comparator<Path> {
     static class AJEStorage {
         int size; // Size que está na 1ª coordenada de qualquer matriz, e esta variável é inicializada no método readMatrix()
         int[][] matrix;
+        long duration;
         int populationSize;
         float probability;
         Path bestPath;
         int ciclesToReachBestPath;
         long msToReachBestPath;
 
-        AJEStorage(String filename, int populationSize, float probability) {
+        AJEStorage(String filename, long duration, int populationSize, float probability) {
             readMatrix(filename);
+            this.duration = duration;
             this.populationSize = populationSize;
             this.probability = probability;
+            bestPath = new Path(size);
             this.ciclesToReachBestPath = 0;
             this.msToReachBestPath = 0;
         }
@@ -106,7 +109,7 @@ public class AJEvolutivo extends Thread implements Comparator<Path> {
 
         Scanner scan = new Scanner(System.in);
         System.out.println("Insira um comando no formato: 'Ficheiro' 'NúmeroProcessos' 'DuraçãoSegundos' 'TamanhoPopulação' 'ProbabilidadeMutação'");
-        System.out.println("ex: ex6.txt 10 15 50 0.02\n-> ");
+        System.out.println("ex: ex6.txt 10 15 50 0.05\n-> ");
         String command = scan.nextLine();
         String[] commandSplit = command.split(" ");
         try {
@@ -120,19 +123,19 @@ public class AJEvolutivo extends Thread implements Comparator<Path> {
             e.printStackTrace();
         }
 
-        AJEStorage ajeStorage = new AJEStorage(filename, populationSize, probability);
+        AJEStorage ajeStorage = new AJEStorage(filename, execTime, populationSize, probability);
         AJEvolutivo threads[] = new AJEvolutivo[nThreads];
         AJEvolutivo.ajeStorage = ajeStorage;
 
         System.out.println("Executing...");
         for (int i = 0; i < nThreads; i++) {
-            threads[i] = new AJEvolutivo(execTime);
+            threads[i] = new AJEvolutivo(i);
             threads[i].start();
         }
         sleep(execTime + 500);
 
         System.out.println("Executed!\n");
-        System.out.println("----- All Data -----");
+        System.out.println("--------------- All Data ---------------");
         System.out.println("Filename: " + filename + " | Execution Time: " + execTime + "ms | Population Size: " + populationSize + " | Mutation Probability: " + probability + "% | Best Path: " + ajeStorage.bestPath.toString() + " | Distance: " + ajeStorage.bestPath.distance(ajeStorage.matrix) + " | Iterations To Best Path: " + ajeStorage.ciclesToReachBestPath + " | Time to Best Path: " + ajeStorage.msToReachBestPath + "ms");
     }
 
@@ -147,7 +150,7 @@ public class AJEvolutivo extends Thread implements Comparator<Path> {
         long startTime = System.currentTimeMillis();
 
         int count = 0;
-        while (cicleTime < duration) {
+        while (cicleTime < ajeStorage.duration) {
             count++;
 
             int[] offSpring1 = new int[ajeStorage.size];
